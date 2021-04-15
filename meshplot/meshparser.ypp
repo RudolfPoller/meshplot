@@ -1,0 +1,106 @@
+/*
+ *  meshparser.ypp
+ *
+ *  Created on: Apr. 12th, 2021
+ *      Author: Dr. R. Poller
+ *
+ *  Synopsis
+ *  	bison grammar definition file for processing FE mesh data
+ *
+ *	bison version: 3.0.4
+ *
+ */
+ 
+%require "3.0.4"
+%language "c++"
+
+%{
+
+#include "meshplot.h"
+#include "Point.h"
+#include "Polygon.h"
+
+typedef pair<NodeSet, ElemSet> FEMesh;
+
+extern FEMesh *p_mesh;
+
+GLfloat coords[3];
+list<Point*> p_corners;
+
+%}
+
+%union {
+	serial label;
+	GLfloat realval;
+}
+
+%{
+
+int yylex(yy::parser::semantic_type *yylval);
+
+%}
+
+%token				NODESET_BEGIN ELEMSET_BEGIN SET_END
+%token	<label>		LABEL
+%token	<realval>	COORD
+%token				EOLN
+%token				CHAR
+
+%%
+
+list:				%empty
+					| list mesh
+					| list EOLN
+					| list error EOLN
+					
+mesh:				nodeset eofs elemset
+
+eofs:				%empty
+					| eofs  EOLN
+
+nodeset:			NODESET_BEGIN node_block SET_END
+					
+node_block:			node
+					| node_block node
+					
+node:				LABEL coordinates EOLN
+						{ p_mesh->first[$1] = Point(coords[0], coords[1], coords[2]); }
+
+coordinates:		COORD COORD
+						{ coords[0] = $1; coords[1] = $2; coords[2] = 0.0f; }
+					| COORD COORD COORD
+						{ coords[0] = $1; coords[1] = $2; coords[2] = $3; }
+
+elemset:			ELEMSET_BEGIN corner_block SET_END
+
+corner_block:		elem
+					| corner_block elem
+
+elem:				LABEL corners EOLN
+						{ p_mesh->second[$1] = Polygon(p_corners);
+						  p_corners.clear(); }
+
+corners:			LABEL LABEL LABEL additional_node
+						{ p_corners.push_front(&p_mesh->first[$1]);
+						  p_corners.push_front(&p_mesh->first[$2]);
+						  p_corners.push_front(&p_mesh->first[$3]); }
+
+additional_node:	%empty
+					| LABEL
+						{ p_corners.push_back(&p_mesh->first[$1]); }
+
+%%
+
+#include <FlexLexer.h>
+#include "parsescan.h"
+
+class MeshScanner meshlexer;
+
+int yylex(yy::parser::semantic_type *yylval) {
+	return meshlexer.yylex(yylval);
+}
+
+void yy::parser::error(const string& msg) {
+	cerr << msg << " near line " << meshlexer.lineno() << endl;
+	exit(1);
+}
