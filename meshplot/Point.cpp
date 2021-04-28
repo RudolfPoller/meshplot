@@ -2,12 +2,15 @@
  * Point.cpp
  *
  *  Created on: Apr. 7th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Task
  *  	Point methods and related functions
  *
  */
+
+#include <iostream>
+#include <iomanip>
 
 #include "Point.h"
 
@@ -55,7 +58,7 @@ void GetCoordExtremes(
 	point1 = nodes.begin()->second;
 	xmin = xmax = point1.GetX();
 	ymin = ymax = point1.GetY();
-	for (const pair<serial, Point>& node : nodes){
+	for (const pair<serial, Point>& node : nodes) {
 		x = node.second.GetX();
 		y = node.second.GetY();
 		xmin = fmin(xmin, x);
@@ -63,4 +66,14 @@ void GetCoordExtremes(
 		ymin = fmin(ymin, y);
 		ymax = fmax(ymax, y);
 	}
+}
+
+void PrintNodes(const NodeSet& nodes)
+{
+	cout << "@ Nodes:\n";
+	for (const pair<serial, Point>& node : nodes)
+		cout << setw(10) << node.first <<
+			setw(10) << node.second.GetX() <<
+			setw(10) << node.second.GetY() << "\n";
+	cout << endl;
 }

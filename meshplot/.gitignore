@@ -1,2 +1,10 @@
 meshparser.tab.hpp
 meshparser.tab.cpp
+/Polygon.o
+/Point.o
+/meshparser.o
+/meshplot.exe
+/meshplot.o
+/meshscanner.o
+/readmesh.o
+/#meshscanner.l#

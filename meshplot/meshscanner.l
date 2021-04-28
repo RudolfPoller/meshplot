@@ -2,7 +2,7 @@
  *  meshscanner.l
  *
  *  Created on: Apr. 12th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Synopsis
  *  	flex lexical analyser definition file for processing FE mesh data
@@ -13,6 +13,8 @@
 %option c++
 %option noyywrap
 %option yylineno
+
+%option debug
 
 /*
  * The option noyywrap means that only one file will be processed
@@ -27,7 +29,6 @@
 
 #include "meshplot.h"
 #include "meshparser.tab.hpp"
-#include "parsescan.h"
 
 /*
  * The macro YY_DECL determines the signature of the lexer (yylex()).
@@ -36,16 +37,21 @@
  * be the heading line of the corresponding member function of the
  * class indicated in the macro definition.
  *
- * Without the definitio below, the signature of yylex() will be the
+ * Without the definition below, the signature of yylex() will be the
  * default
  *
  *		int yyFlexLexer::yylex(void)
  *
  */
 
-#define YY_DECL int MeshScanner::yylex(yy::parser::semantic_type *yylval)
+#define YY_DECL symbol_type MeshScanner::yylex(int dummy)
+#define yyterminate() return static_cast<kind_type>(0)
 
-using token = yy::parser::token;
+using parser = yy::parser;
+using symbol_type = parser::symbol_type;
+using kind_type = parser::by_type::kind_type;
+
+#include "parsescan.h"
 
 %}
 
@@ -69,23 +75,21 @@ SET_END			^"*end"{WSPC}*{EOLN}
 
 {BLOCK_COMMENT}
 
-{NODESET_BEGIN}	return token::NODESET_BEGIN;
+{NODESET_BEGIN}	return parser::make_NODESET_BEGIN();
 
-{ELEMSET_BEGIN}	return token::ELEMSET_BEGIN;
+{ELEMSET_BEGIN}	return parser::make_ELEMSET_BEGIN();
 			
-{SET_END}		return token::SET_END;
+{SET_END}		return parser::make_SET_END();
 
-{REALNUM}		{ yylval->realval = atof(yytext);
-			  	  return token::COORD; }
+{REALNUM}		return parser::make_COORD(atof(yytext));
 
-{POSINT}		{ yylval->label = atoi(yytext);
-			  	  return token::LABEL; }
+{POSINT}		return parser::make_LABEL(atoi(yytext));
 
 {WSPC}+
 
-{EOLN}			return token::EOLN;
+{EOLN}			return parser::make_EOLN();
 
-.				return token::CHAR;
+.				return parser::make_CHAR();
 
 %%
 

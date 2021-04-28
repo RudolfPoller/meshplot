@@ -17,7 +17,7 @@
 #include <map>
 using namespace std;
 
-#include <gl/glut.h>
+#include <GL/glut.h>
 
 typedef unsigned serial;
 

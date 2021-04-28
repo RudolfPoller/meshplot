@@ -15,17 +15,19 @@
 #include "meshplot.h"
 #include "Point.h"
 
+typedef pair<serial, Point*> LabPointP;
+
 class Polygon {
 
-	list<Point*> p_nodes;
+	list<LabPointP> p_nodes;
 
 public:
 
 	Polygon() = default;
 
-	Polygon(Point *p_C1, Point *p_C2, Point *p_C3);
-	Polygon(Point *p_C1, Point *p_C2, Point *p_C3, Point *p_C4);
-	Polygon(list<Point*> p_corners);
+	Polygon(LabPointP, LabPointP, LabPointP);
+	Polygon(LabPointP, LabPointP, LabPointP, LabPointP);
+	Polygon(list<LabPointP>&);
 
 	Polygon(const Polygon&);
 	Polygon(Polygon&&) = default;
@@ -36,8 +38,9 @@ public:
 
 	bool empty(void) const { return p_nodes.empty(); }
 
-	void AddCorner(Point&);
+	void AddCorner(const LabPointP&);
 	void DrawLines(void) const;
+	void Print(serial) const;
 
 };
 

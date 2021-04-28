@@ -2,7 +2,7 @@
  *  meshparser.ypp
  *
  *  Created on: Apr. 12th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Synopsis
  *  	bison grammar definition file for processing FE mesh data
@@ -14,6 +14,11 @@
 %require "3.0.4"
 %language "c++"
 
+%define parse.trace
+
+%define api.value.type variant
+%define api.token.constructor
+
 %{
 
 #include "meshplot.h"
@@ -21,30 +26,29 @@
 #include "Polygon.h"
 
 typedef pair<NodeSet, ElemSet> FEMesh;
+typedef pair<serial, Point*> LabPointP;
 
 extern FEMesh *p_mesh;
 
 GLfloat coords[3];
-list<Point*> p_corners;
-
-%}
-
-%union {
-	serial label;
-	GLfloat realval;
-}
-
-%{
-
-int yylex(yy::parser::semantic_type *yylval);
+list<LabPointP> corners;
 
 %}
 
 %token				NODESET_BEGIN ELEMSET_BEGIN SET_END
-%token	<label>		LABEL
-%token	<realval>	COORD
+%token	<serial>	LABEL
+%token	<GLfloat>	COORD
 %token				EOLN
 %token				CHAR
+
+%code {
+
+using parser = yy::parser;
+using symbol_type = parser::symbol_type;
+
+symbol_type yylex(void);
+
+}
 
 %%
 
@@ -77,30 +81,34 @@ corner_block:		elem
 					| corner_block elem
 
 elem:				LABEL corners EOLN
-						{ p_mesh->second[$1] = Polygon(p_corners);
-						  p_corners.clear(); }
+						{ p_mesh->second[$1] = Polygon(corners);
+						  corners.clear(); }
 
-corners:			LABEL LABEL LABEL additional_node
-						{ p_corners.push_front(&p_mesh->first[$1]);
-						  p_corners.push_front(&p_mesh->first[$2]);
-						  p_corners.push_front(&p_mesh->first[$3]); }
+corners:			LABEL LABEL LABEL additional_nodes
+						{ corners.push_front(LabPointP($3, &p_mesh->first[$3]));
+						  corners.push_front(LabPointP($2, &p_mesh->first[$2]));
+						  corners.push_front(LabPointP($1, &p_mesh->first[$1])); }
 
-additional_node:	%empty
-					| LABEL
-						{ p_corners.push_back(&p_mesh->first[$1]); }
+additional_nodes:	%empty
+					| additional_nodes LABEL
+						{ corners.push_back(LabPointP($2, &p_mesh->first[$2])); }
 
 %%
 
 #include <FlexLexer.h>
 #include "parsescan.h"
 
+#define LEXDEBUG	0
+
 class MeshScanner meshlexer;
 
-int yylex(yy::parser::semantic_type *yylval) {
-	return meshlexer.yylex(yylval);
+symbol_type yylex(void) {
+	meshlexer.set_debug(LEXDEBUG);
+	return meshlexer.yylex(0);
 }
 
-void yy::parser::error(const string& msg) {
-	cerr << msg << " near line " << meshlexer.lineno() << endl;
+void parser::error(const string& msg) {
+	cerr << msg << " near line " << meshlexer.lineno();
+	cerr << " at token " << meshlexer.YYText() << endl;
 	exit(1);
 }

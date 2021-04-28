@@ -2,7 +2,7 @@
  * readmesh.cpp
  *
  *  Created on: Apr. 7th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Synopsis
  *  	Reads mesh data from the standard input
@@ -13,24 +13,33 @@
  */
 
 #include <iostream>
+#include <iomanip>
 
 #include "Point.h"
 #include "Polygon.h"
 
 #include "meshparser.tab.hpp"
 
-typedef pair<NodeSet, ElemSet> FEMesh;
-
 extern void WriteStepTitle(const string&);
+extern void PrintNodes(const NodeSet&);
+extern void PrintElements(const ElemSet&);
 
+using parser = yy::parser;
+using debug_level_type = parser::debug_level_type;
+const debug_level_type ParserDebug = 0;
+
+typedef pair<NodeSet, ElemSet> FEMesh;
 FEMesh *p_mesh;
 
 void ReadFEMesh(FEMesh& mesh)
 {
-	p_mesh = &mesh;
-	yy::parser meshreader;
+	parser meshreader;
 
+	p_mesh = &mesh;
 	WriteStepTitle("Reading mesh data");
+	meshreader.set_debug_level(ParserDebug);
 	meshreader.parse();
+	cout << "\tnumber of nodes:    " << setw(4) << mesh.first.size() << endl;
+	cout << "\tnumber of elements: " << setw(4) << mesh.second.size() << endl;
 }
 

@@ -25,7 +25,7 @@
 
 class MeshScanner : public yyFlexLexer {
 public:
-	int yylex(yy::parser::semantic_type *yylval);
+	symbol_type yylex(int);
 };
 
 

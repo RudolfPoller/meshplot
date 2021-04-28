@@ -2,7 +2,7 @@
  * Polygon.cpp
  *
  *  Created on: Apr. 7th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Task
  *  	Polygon methods and related functions
@@ -10,6 +10,8 @@
  */
 
 
+#include <iostream>
+#include <iomanip>
 #include <list>
 #include <gl/glut.h>
 
@@ -17,24 +19,24 @@
 
 
 
-Polygon::Polygon(Point *p_C1, Point *p_C2, Point *p_C3)
+Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3)
 {
-	p_nodes.push_back(p_C1);
-	p_nodes.push_back(p_C2);
-	p_nodes.push_back(p_C3);
+	p_nodes.push_back(C1);
+	p_nodes.push_back(C2);
+	p_nodes.push_back(C3);
 }
 
-Polygon::Polygon(Point *p_C1, Point *p_C2, Point *p_C3, Point *p_C4)
+Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3, LabPointP C4)
 {
-	p_nodes.push_back(p_C1);
-	p_nodes.push_back(p_C2);
-	p_nodes.push_back(p_C3);
-	p_nodes.push_back(p_C4);
+	p_nodes.push_back(C1);
+	p_nodes.push_back(C2);
+	p_nodes.push_back(C3);
+	p_nodes.push_back(C4);
 }
 
-Polygon::Polygon(list<Point*> p_corners)
+Polygon::Polygon(list<LabPointP>& ps)
 {
-	p_nodes.splice(p_nodes.begin(), p_corners);
+	p_nodes.splice(p_nodes.begin(), ps);
 }
 
 Polygon::~Polygon() {
@@ -52,9 +54,9 @@ Polygon& Polygon::operator=(const Polygon &other) {
 }
 
 
-void Polygon::AddCorner(Point& C)
+void Polygon::AddCorner(const LabPointP& C)
 {
-	p_nodes.push_back(&C);
+	p_nodes.push_back(C);
 }
 
 
@@ -67,10 +69,10 @@ void Polygon::AddCorner(Point& C)
 
 void Polygon::DrawLines(void) const
 {
-	const Point *p_first = p_nodes.front();
-	const Point *p_last = p_nodes.back();
-	Point *p_secp1, *p_secp2;
-	list<Point*>::const_iterator i, j;
+	const LabPointP first = p_nodes.front();
+	const LabPointP last = p_nodes.back();
+	LabPointP secp1, secp2;
+	list<LabPointP>::const_iterator i, j;
 
 	glColor3f(0, 0, 0); // black
 	glLineWidth(1.0);
@@ -78,13 +80,29 @@ void Polygon::DrawLines(void) const
 	glBegin(GL_LINES);
 
 		for (i = j = p_nodes.begin(), ++j; j != p_nodes.end(); ++i, ++j){
-			p_secp1 = *i; p_secp2 = *j;
-			glVertex2f(p_secp1->GetX(), p_secp1->GetY());
-			glVertex2f(p_secp2->GetX(), p_secp2->GetY());
+			secp1 = *i; secp2 = *j;
+			glVertex2f(secp1.second->GetX(), secp1.second->GetY());
+			glVertex2f(secp2.second->GetX(), secp2.second->GetY());
 		}
 
-		glVertex2f(p_last->GetX(), p_last->GetY());
-		glVertex2f(p_first->GetX(), p_first->GetY());
+		glVertex2f(last.second->GetX(), last.second->GetY());
+		glVertex2f(first.second->GetX(), first.second->GetY());
 
 	glEnd();
+}
+
+void Polygon::Print(serial label) const
+{
+	cout << setw(5) << label;
+	for (const LabPointP& corner : p_nodes)
+		cout << setw(5) << corner.first;
+	cout << "\n";
+}
+
+void PrintElements(const ElemSet& elems)
+{
+	cout << "@ Elements:\n";
+	for (const pair<serial, Polygon>& elem : elems)
+		elem.second.Print(elem.first);
+	cout << endl;
 }

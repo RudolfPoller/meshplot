@@ -5,8 +5,11 @@
 #      Author: Dr. R. Poller
 #
 #  Synopsis
-#  	Reads in mesh data
+#  	Reads in mesh using yacc/lex (more precisely, bison/flex)
+#   and displays it
 #
+#  Remark
+#	'make DEBUG=y target' generates code for debugging
 
 
 LEX = 		flex
@@ -15,31 +18,38 @@ LFLAGS =	-L
 YACC = 		bison
 YFLAGS =	-d -l
 
-CXXFLAGS =	-O2 -g -Wall -fmessage-length=0 -std=c++11
+CXXFLAGS =	-Wall -fmessage-length=0 -std=c++11
 
 OBJS =		meshplot.o Point.o Polygon.o readmesh.o meshparser.o meshscanner.o
 
-LIBS =		-lglut -lglu -lgl -lfl
+LIBS =		-lGLEW -lGLUT -lGLU -lGL -lfl
 
 TARGET =	meshplot.exe
+
+ifeq ($(DEBUG), y)
+	CXXFLAGS := -g $(CXXFLAGS)
+else
+	CXXFLAGS := -O2 $(CXXFLAGS)
+endif
 
 $(TARGET):	$(OBJS)
 	$(CXX) -o $(TARGET) $(OBJS) $(LIBS)
 	
 meshplot.cpp: meshplot.h Point.h Polygon.h
-	touch $@
 	
 Point.cpp: Point.h
-	touch $@
 	
 Polygon.cpp: Polygon.h
-	touch $@
 	
 readmesh.cpp: Point.h Polygon.h meshparser.tab.hpp
-	touch $@
 	
 meshparser.ypp meshscanner.l: parsescan.h
-	touch $@
+	
+# bison 3.0.4 uses ambiguous definitions in the case of
+# "Complete Symbols" (bison manual Sec. 3.7.6);
+# the warning message of "maybe-uninitialized" will be supressed
+meshparser.o: meshparser.tab.cpp meshparser.tab.hpp
+	$(CXX) $(CXXFLAGS) -Wno-maybe-uninitialized -c -o meshparser.o meshparser.tab.cpp
 
 %.tab.cpp %.tab.hpp: %.ypp
 	$(YACC) $(YFLAGS) $<
