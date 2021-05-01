@@ -2,7 +2,7 @@
  * Point.h
  *
  *  Created on: Apr. 7th, 2021
- *      Author: Dr. R. Poller
+ *      Author: Dr. Rudolf Poller
  *
  *  Task
  *  	Point and node set definitions
@@ -21,7 +21,7 @@ class Point {
 
 public:
 
-	Point() = default;
+	Point() { x = y = z = 0.0f; };
 
 	Point(GLfloat x, GLfloat y);
 	Point(GLfloat x, GLfloat y, GLfloat z);

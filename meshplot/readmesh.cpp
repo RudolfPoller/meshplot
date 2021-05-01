@@ -12,34 +12,54 @@
  *
  */
 
-#include <iostream>
-#include <iomanip>
-
 #include "Point.h"
 #include "Polygon.h"
 
 #include "meshparser.tab.hpp"
+#include "ansparser.tab.hpp"
 
+extern string problem_title;
 extern void WriteStepTitle(const string&);
-extern void PrintNodes(const NodeSet&);
-extern void PrintElements(const ElemSet&);
 
-using parser = yy::parser;
-using debug_level_type = parser::debug_level_type;
-const debug_level_type ParserDebug = 0;
+const yy::parser::debug_level_type      ParserDebug = 0;
+const ans::parser::debug_level_type ans_ParserDebug = 0;
 
 typedef pair<NodeSet, ElemSet> FEMesh;
 FEMesh *p_mesh;
 
-void ReadFEMesh(FEMesh& mesh)
-{
-	parser meshreader;
+void WriteStatistics(void);
+void PrintNodes(const NodeSet&);
+void PrintElements(const ElemSet&);
 
+void ReadFEMesh(input_grammar format, FEMesh& mesh)
+{
 	p_mesh = &mesh;
 	WriteStepTitle("Reading mesh data");
-	meshreader.set_debug_level(ParserDebug);
-	meshreader.parse();
-	cout << "\tnumber of nodes:    " << setw(4) << mesh.first.size() << endl;
-	cout << "\tnumber of elements: " << setw(4) << mesh.second.size() << endl;
+	switch (format) {
+	case ansys:
+		{
+			ans::parser meshreader;
+			meshreader.set_debug_level(ans_ParserDebug);
+			meshreader.parse();
+			break;
+		}
+	case meshplot:
+	default:
+		{
+			yy::parser meshreader;
+			meshreader.set_debug_level(ParserDebug);
+			meshreader.parse();
+			break;
+		}
+	}
+	WriteStatistics();
+}
+
+void WriteStatistics(void)
+{
+	if (problem_title.size())
+		cout << problem_title << endl;
+	cout << "\tnumber of nodes:    " << setw(4) << p_mesh->first.size() << endl;
+	cout << "\tnumber of elements: " << setw(4) << p_mesh->second.size() << endl;
 }
 

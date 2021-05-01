@@ -61,6 +61,7 @@ EOLN		\r\n
 
 REALNUM		[+-]?[0-9]*"."[0-9]*([+-]?[eE][0-9]+)?
 POSINT		[1-9][0-9]*
+ZERO		0
 
 LINE_COMMENT	"//".*{EOLN}
 BLOCK_COMMENT	"/*"(.|{EOLN})*"*/"
@@ -76,20 +77,18 @@ SET_END			^"*end"{WSPC}*{EOLN}
 {BLOCK_COMMENT}
 
 {NODESET_BEGIN}	return parser::make_NODESET_BEGIN();
-
-{ELEMSET_BEGIN}	return parser::make_ELEMSET_BEGIN();
-			
+{ELEMSET_BEGIN}	return parser::make_ELEMSET_BEGIN();		
 {SET_END}		return parser::make_SET_END();
 
-{REALNUM}		return parser::make_COORD(atof(yytext));
-
-{POSINT}		return parser::make_LABEL(atoi(yytext));
+{REALNUM}		return parser::make_REALNUM(atof(yytext));
+{POSINT}		return parser::make_POSINT(atoi(yytext));
+{ZERO}			return parser::make_ZERO();
 
 {WSPC}+
 
 {EOLN}			return parser::make_EOLN();
 
-.				return parser::make_CHAR();
+.
 
 %%
 

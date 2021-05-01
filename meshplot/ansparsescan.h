@@ -1,7 +1,7 @@
 /*
- * parsescan.h
+ * ansparsescan.h
  *
- *  Created on: Apr. 13th, 2021
+ *  Created on: Apr. 28th, 2021
  *      Author: Dr. Rudolf Poller
  *
  *  Task
@@ -9,8 +9,10 @@
  *
  */
 
-#ifndef PARSESCAN_H_
-#define PARSESCAN_H_
+#ifndef ANSPARSESCAN_H_
+#define ANSPARSESCAN_H_
+
+#include <string>
 
 /*
  * The purpose of the class MeshScanner below is to allow
@@ -23,10 +25,21 @@
  *
  */
 
-class MeshScanner : public yyFlexLexer {
+class ansMeshScanner : public ansFlexLexer {
 public:
-	yy::parser::symbol_type yylex(int);
+	ans::parser::symbol_type anslex(int);
 };
 
 
-#endif /* PARSESCAN_H_ */
+/*
+ * Override of the function `int ansFlexLexer::yylex(void)'.
+ * This function is not used.
+ * Rem.: bison renames yylex to anslex
+ */
+
+int ansFlexLexer::yylex(void) {
+	return 0;
+}
+
+
+#endif /* ANSPARSESCAN_H_ */

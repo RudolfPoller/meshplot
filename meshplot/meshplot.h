@@ -13,13 +13,18 @@
 #define MESHPLOT_H_
 
 
+#include <iostream>
+#include <iomanip>
 #include <list>
 #include <map>
+#include <cmath>
 using namespace std;
 
 #include <GL/glut.h>
 
 typedef unsigned serial;
+
+enum input_grammar {meshplot, ansys};
 
 
 #endif /* MESHPLOT_H_ */

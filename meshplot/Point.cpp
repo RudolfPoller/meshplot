@@ -9,9 +9,6 @@
  *
  */
 
-#include <iostream>
-#include <iomanip>
-
 #include "Point.h"
 
 
@@ -34,17 +31,17 @@ Point::~Point() {
 Point::Point(const Point &other) {
 	x = other.x;
 	y = other.y;
+	z = other.z;
 }
 
 Point& Point::operator=(const Point &other) {
 	if (this != &other) {
 		x = other.x;
 		y = other.y;
+		z = other.z;
 	}
 	return *this;
 }
-
-#include <cmath>
 
 void GetCoordExtremes(
 		const NodeSet& nodes,

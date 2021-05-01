@@ -10,11 +10,6 @@
  */
 
 
-#include <iostream>
-#include <iomanip>
-#include <list>
-#include <gl/glut.h>
-
 #include "Polygon.h"
 
 

@@ -1,0 +1,182 @@
+/*
+ *  ansparser.ypp
+ *
+ *  Created on: Apr. 28th, 2021
+ *      Author: Dr. Rudolf Poller
+ *
+ *  Synopsis
+ *  	bison grammar definition file for processing FE mesh data
+ *		stored in an Ansys input file (e.g. xxx.inp)
+ *
+ *	bison version: 3.7
+ *
+ */
+ 
+%require "3.7"
+%language "c++"
+
+%define parse.trace
+
+%define api.prefix {ans}
+
+%define api.value.type variant
+%define api.token.constructor
+
+%{
+
+#include <vector>
+
+#include "meshplot.h"
+#include "Point.h"
+#include "Polygon.h"
+
+typedef pair<NodeSet, ElemSet> FEMesh;
+typedef pair<serial, Point*> LabPointP;
+
+extern string problem_title;
+extern FEMesh *p_mesh;
+
+const int LexDebug = 0;
+
+static int					cix;
+static serial				selected_type;
+static GLfloat				coords[3];
+static vector<serial>		labels;
+static list<LabPointP>		corners;
+static map<serial, string>	eltyps;
+
+void arrange(list<LabPointP>&, short);
+
+%}
+
+%token				CMD_NODE CMD_ELEM
+%token				CMD_ELTYPE CMD_TYPE
+%token				CMD_TITLE
+%token  <string>	TITLE_TEXT
+%token  <string>	NAME
+%token	<serial>	POSINT
+%token	<GLfloat>	REALNUM
+%token				ZERO
+%token				COMMA
+%token				EOLN
+
+%code {
+
+ans::parser::symbol_type anslex(void);
+
+}
+
+%%
+
+list:				%empty
+					| list node
+					| list element
+					| list eltype
+					| list eltypsel
+					| list title
+					| list error EOLN
+					
+					
+node:				CMD_NODE COMMA label coordinates EOLN
+						{
+						  p_mesh->first[labels[0]]
+							= Point(coords[0], coords[1], coords[2]);
+						  cix = 0;
+						  labels.clear();
+						}
+
+coordinates:		COMMA coord COMMA coord
+						{ coords[2] = 0.0f; }
+					| COMMA coord COMMA coord COMMA coord
+
+element:			CMD_ELEM COMMA label nodelabs EOLN
+						{
+						  if (eltyps[selected_type] == "PLANE183")
+							 arrange(corners, 4);
+						  p_mesh->second[labels[0]] = Polygon(corners);
+						  corners.clear();
+						  labels.clear();
+						}
+
+nodelabs:			COMMA label COMMA label COMMA label add_nodelabs
+						{
+						  serial l;
+						  l = labels[3];
+						  corners.push_front(
+						  		LabPointP(l, &p_mesh->first[l])
+						  );
+						  l = labels[2];
+						  corners.push_front(
+						  		LabPointP(l, &p_mesh->first[l])
+						  );
+						  l = labels[1];
+						  corners.push_front(
+						  		LabPointP(l, &p_mesh->first[l])
+						  );
+						}
+
+add_nodelabs:		%empty
+					| add_nodelabs COMMA label
+						{
+						  serial l = labels.back();
+						  corners.push_back(LabPointP(l, &p_mesh->first[l]));
+						}
+
+eltype:				CMD_ELTYPE COMMA label COMMA NAME EOLN
+						{
+						  eltyps[labels[0]] = $5;
+						  labels.clear();
+						}
+						
+eltypsel:			CMD_TYPE COMMA label EOLN
+						{
+						  selected_type = labels[0];
+						  labels.clear();
+						}
+
+title:				TITLE_TEXT
+						{ problem_title = $1; }
+						
+label:				POSINT
+						{ labels.push_back($1); }
+
+coord:				ZERO
+						{ coords[cix++] = 0.0f; }
+					| REALNUM
+						{ coords[cix++] = $1; }
+					| POSINT
+						{ coords[cix++] = static_cast<GLfloat>($1); }
+
+%%
+
+#undef yyFlexLexer
+#define yyFlexLexer ansFlexLexer
+
+#include <FlexLexer.h>
+#include "ansparsescan.h"
+
+static class ansMeshScanner meshlexer;
+
+ans::parser::symbol_type yylex(void) {
+	meshlexer.set_debug(LexDebug);
+	return meshlexer.anslex(0);
+}
+
+void ans::parser::error(const string& msg) {
+	cerr << msg << " near line " << meshlexer.lineno();
+	cerr << " at token '" << meshlexer.YYText() << "'" << endl;
+	exit(1);
+}
+
+void arrange(list<LabPointP>& nodes, short cnum)
+{
+	list<LabPointP> tmp_nodes;
+	list<LabPointP>::iterator i, j;
+	
+	advance(j = nodes.begin(), cnum);
+	for (i = nodes.begin(); j != nodes.end(); ++i, ++j) {
+		tmp_nodes.push_back(*i);
+		tmp_nodes.push_back(*j);
+	}
+	swap(nodes, tmp_nodes);
+}

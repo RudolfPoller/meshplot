@@ -2,7 +2,7 @@
 # Makefile of meshplot
 #
 #  Created on: Apr. 14th, 2021
-#      Author: Dr. R. Poller
+#      Author: Dr. Rudolf Poller
 #
 #  Synopsis
 #  	Reads in mesh using yacc/lex (more precisely, bison/flex)
@@ -20,7 +20,11 @@ YFLAGS =	-d -l
 
 CXXFLAGS =	-Wall -fmessage-length=0 -std=c++11
 
-OBJS =		meshplot.o Point.o Polygon.o readmesh.o meshparser.o meshscanner.o
+OBJS =		meshplot.o \
+			Point.o Polygon.o \
+			readmesh.o \
+			meshparser.o meshscanner.o \
+			ansparser.o ansscanner.o
 
 LIBS =		-lGLEW -lGLUT -lGLU -lGL -lfl
 
@@ -41,15 +45,9 @@ Point.cpp: Point.h
 	
 Polygon.cpp: Polygon.h
 	
-readmesh.cpp: Point.h Polygon.h meshparser.tab.hpp
+readmesh.cpp: Point.h Polygon.h meshparser.tab.hpp ansparser.tab.hpp
 	
-meshparser.ypp meshscanner.l: parsescan.h
-	
-# bison 3.0.4 uses ambiguous definitions in the case of
-# "Complete Symbols" (bison manual Sec. 3.7.6);
-# the warning message of "maybe-uninitialized" will be supressed
-meshparser.o: meshparser.tab.cpp meshparser.tab.hpp
-	$(CXX) $(CXXFLAGS) -Wno-maybe-uninitialized -c -o meshparser.o meshparser.tab.cpp
+meshparser.ypp meshscanner.l: meshplot.h parsescan.h
 
 %.tab.cpp %.tab.hpp: %.ypp
 	$(YACC) $(YFLAGS) $<
@@ -66,6 +64,6 @@ all:	$(TARGET)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-	rm -f meshparser.tab.{cpp,hpp} stack.hh
-	rm -f meshscanner.cpp
+	rm -f meshparser.tab.{cpp,hpp} meshscanner.cpp
+	rm -f ansparser.tab.{cpp,hpp} ansscanner.cpp
 	

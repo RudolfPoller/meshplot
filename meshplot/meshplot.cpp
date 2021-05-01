@@ -7,10 +7,8 @@
 //               conceived as a finite element mesh
 //============================================================================
 
-#include <iostream>
-#include <cmath>
-using namespace std;
 
+#include <cstring>
 #include <GL/glew.h>
 
 #include "meshplot.h"
@@ -27,6 +25,7 @@ const int XWinOrigY  =	  60;
 const int XWinWidth  =	1100;
 const int XWinHeight =	 600;
 
+string problem_title;
 FEMesh mesh;
 
 template<typename T>
@@ -39,7 +38,7 @@ inline T halfdist(T dist) {
 	return 0.5 * dist;
 }
 
-extern void ReadFEMesh(FEMesh&);
+extern void ReadFEMesh(input_grammar, FEMesh&);
 
 int  InitGraphics(int, char**);
 void PlottingFEMesh(void);
@@ -48,14 +47,36 @@ void SetWinEqSides(reals4&);
 void LookThruWin(reals4);
 void WriteStepTitle(const string&);
 
+input_grammar getinpform(int, char**);
+
 int main(int argc, char **argv)
 {
 	cout << "*** Plotting FE Mesh by openGL" << endl;
-	ReadFEMesh(mesh);
+	ReadFEMesh(getinpform(argc, argv), mesh);
 	if (!InitGraphics(argc, argv))
-			return 1;
+		return 1;
 	glutMainLoop();
 	return 0;
+}
+
+input_grammar getinpform(int argc, char **argv)
+{
+	char opt;
+	input_grammar format = meshplot;
+
+	while (--argc)
+		if (argv[argc][0] == '-' && strlen(argv[argc]) == 2)
+			switch (opt = argv[argc][1]) {
+			case 'a':
+				format = ansys;
+				break;
+			default:
+				cerr << "invalid option: -" << opt << endl;
+				exit(1);
+				break;
+			}
+
+	return format;
 }
 
 int InitGraphics(int argc, char **argv)
