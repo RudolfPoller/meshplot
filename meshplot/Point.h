@@ -34,12 +34,13 @@ public:
 	virtual ~Point();
 
 	GLfloat GetX(void) const { return x; }
-	GLfloat GetY(void) const { return y; }
-
+    GLfloat GetY(void) const { return y; }
+    GLfloat GetZ(void) const { return z; }
+    std::list<GLfloat> ListPos(void) const;
 };
 
-typedef map<serial, Point> NodeSet;
+typedef std::map<serial, Point> NodeSet;
 
-void GetCoordExtremes(const NodeSet&, GLdouble&, GLdouble&, GLdouble&, GLdouble&);
+void GetCoordExtremes(const NodeSet&, reals4&);
 
 #endif /* POINT_H_ */

@@ -12,6 +12,8 @@
  *
  */
 
+using namespace std;
+
 #include "Point.h"
 #include "Polygon.h"
 
@@ -28,8 +30,6 @@ typedef pair<NodeSet, ElemSet> FEMesh;
 FEMesh *p_mesh;
 
 void WriteStatistics(void);
-void PrintNodes(const NodeSet&);
-void PrintElements(const ElemSet&);
 
 void ReadFEMesh(input_grammar format, FEMesh& mesh)
 {
@@ -59,6 +59,8 @@ void WriteStatistics(void)
 {
 	if (problem_title.size())
 		cout << problem_title << endl;
+	else
+	    cout << " --- No title specified ---" << endl;
 	cout << "\tnumber of nodes:    " << setw(4) << p_mesh->first.size() << endl;
 	cout << "\tnumber of elements: " << setw(4) << p_mesh->second.size() << endl;
 }

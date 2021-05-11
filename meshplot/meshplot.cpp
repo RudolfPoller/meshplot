@@ -7,7 +7,6 @@
 //               conceived as a finite element mesh
 //============================================================================
 
-
 #include <cstring>
 #include <GL/glew.h>
 
@@ -15,7 +14,7 @@
 #include "Point.h"
 #include "Polygon.h"
 
-typedef tuple<GLdouble, GLdouble, GLdouble, GLdouble> reals4;
+using namespace std;
 
 typedef pair<NodeSet, ElemSet> FEMesh;
 
@@ -24,6 +23,9 @@ const int XWinOrigX  =	  50;
 const int XWinOrigY  =	  60;
 const int XWinWidth  =	1100;
 const int XWinHeight =	 600;
+
+// Number of DOFs
+const GLsizei dofNum = 3;
 
 string problem_title;
 FEMesh mesh;
@@ -40,11 +42,17 @@ inline T halfdist(T dist) {
 
 extern void ReadFEMesh(input_grammar, FEMesh&);
 
+GLuint VBuffIds[1];
+GLsizei nodePairNum;
+
 int  InitGraphics(int, char**);
+void PassNodePairs(void);
+void CollectCoordinates(const ElemSet&, list<GLfloat>&);
 void PlottingFEMesh(void);
 void SetViewSystem(GLsizei, GLsizei);
 void SetWinEqSides(reals4&);
-void LookThruWin(reals4);
+void SetLookWin(reals4);
+void KeyBoardHit(unsigned char, int, int);
 void WriteStepTitle(const string&);
 
 input_grammar getinpform(int, char**);
@@ -87,7 +95,7 @@ int InitGraphics(int argc, char **argv)
 
 	// Initialization of GLUT
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
 	// Window
 	glutInitWindowSize(XWinWidth, XWinHeight);
@@ -107,42 +115,79 @@ int InitGraphics(int argc, char **argv)
 	// Background color: white
 	glClearColor(1.0, 1.0, 1.0, 0.0);
 
+    // Line attributes
+	glColor3f(0, 0, 0); // black
+    glLineWidth(1.0);
+
+	// Feeding nodes that are to be connected
+	PassNodePairs();
+
 	// Registering the drawing procedure
 	glutDisplayFunc(PlottingFEMesh);
 
 	// Registering the reshape procedure
 	glutReshapeFunc(SetViewSystem);
 
+    glutKeyboardFunc(KeyBoardHit);
+
 	return 1;
 }
 
-void SetViewSystem(GLsizei width, GLsizei height)
+void PassNodePairs(void)
 {
-	GLint cornx, corny;
-	GLint origx, origy;
-	GLsizei sidelg, sideoffs;
+    const NodeSet& nodes = mesh.first;
+    const ElemSet& elems = mesh.second;
+    reals4 wlims;
+    GLsizei coordNum, byteNum;
+    GLfloat *coords;
+    list<GLfloat> ConNDCoords;
 
-	sidelg = min(width, height);
-	origx = halfdist(width);
-	origy = halfdist(height);
-	sideoffs = halfdist(sidelg);
-	cornx = origx - sideoffs;
-	corny = origy - sideoffs;
-	glViewport(cornx, corny, sidelg, sidelg);
+    GetCoordExtremes(nodes, wlims);
+    SetLookWin(wlims);
+    CollectCoordinates(elems, ConNDCoords);
+    coordNum = ConNDCoords.size();
+    byteNum = coordNum * sizeof(GLfloat);
+    nodePairNum = coordNum / dofNum;
+    coords = new GLfloat[coordNum];
+    copy(ConNDCoords.begin(), ConNDCoords.end(), coords);
+    glGenBuffers(1, VBuffIds);
+    glBindBuffer(GL_ARRAY_BUFFER, VBuffIds[0]);
+    glBufferData(GL_ARRAY_BUFFER, byteNum, coords, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    delete[] coords;
+}
+
+void CollectCoordinates(const ElemSet& elems, list<GLfloat>& connCoords)
+{
+    for (const pair<serial, Polygon>& elem : elems)
+        connCoords.splice(connCoords.end(), elem.second.LsConNDCoords());
 }
 
 void PlottingFEMesh(void)
 {
-	const NodeSet& nodes = mesh.first;
-	const ElemSet& elems = mesh.second;
-	GLdouble xmin, xmax, ymin, ymax;
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindBuffer(GL_ARRAY_BUFFER, VBuffIds[0]);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, dofNum, GL_FLOAT, GL_FALSE, 0, 0);
+    glDrawArrays(GL_LINES, 0, nodePairNum);
+    glDisableVertexAttribArray(0);
+	glutSwapBuffers();
+}
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	GetCoordExtremes(nodes, xmin, xmax, ymin, ymax);
-	LookThruWin(reals4(xmin, xmax, ymin, ymax));
-	for (const pair<serial, Polygon>& elem : elems)
-		elem.second.DrawLines();
-	glFlush();
+
+void SetViewSystem(GLsizei width, GLsizei height)
+{
+    GLint cornx, corny;
+    GLint origx, origy;
+    GLsizei sidelg, sideoffs;
+
+    sidelg = min(width, height);
+    origx = halfdist(width);
+    origy = halfdist(height);
+    sideoffs = halfdist(sidelg);
+    cornx = origx - sideoffs;
+    corny = origy - sideoffs;
+    glViewport(cornx, corny, sidelg, sidelg);
 }
 
 
@@ -184,7 +229,7 @@ void SetWinEqSides(reals4& geodat)
  * the FE mesh will be viewed
  */
 
-void LookThruWin(reals4 geodat)
+void SetLookWin(reals4 geodat)
 {
 	GLdouble xmin, xmax, ymin, ymax;
 
@@ -195,6 +240,19 @@ void LookThruWin(reals4 geodat)
 	gluOrtho2D(xmin, xmax, ymin, ymax);
 	glMatrixMode(GL_MODELVIEW);
 }
+
+#define ESCAPE_CHAR 27
+
+void KeyBoardHit(unsigned char key, int x, int y)
+{
+    switch (key) {
+    case ESCAPE_CHAR:
+        glutLeaveMainLoop();
+        cout << "Exit by ESC\n";
+        return;
+    }
+}
+
 
 void WriteStepTitle(const string& title)
 {

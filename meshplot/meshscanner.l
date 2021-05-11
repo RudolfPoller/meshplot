@@ -27,6 +27,8 @@
 
 %{
 
+using namespace std;
+
 #include "meshplot.h"
 #include "meshparser.tab.hpp"
 

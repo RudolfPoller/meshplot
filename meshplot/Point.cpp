@@ -11,6 +11,8 @@
 
 #include "Point.h"
 
+using namespace std;
+
 
 Point::Point(GLfloat x, GLfloat y) {
 	this->x = x;
@@ -43,15 +45,22 @@ Point& Point::operator=(const Point &other) {
 	return *this;
 }
 
-void GetCoordExtremes(
-		const NodeSet& nodes,
-		GLdouble& xmin, GLdouble& xmax,
-		GLdouble& ymin, GLdouble& ymax
-		)
+list<GLfloat> Point::ListPos(void) const {
+    list<GLfloat> cooList;
+    cooList.push_back(x);
+    cooList.push_back(y);
+    cooList.push_back(z);
+    return cooList;
+}
+
+void GetCoordExtremes(const NodeSet& nodes, reals4& geodat)
 {
 	GLdouble x, y;
+    GLdouble xmin, xmax;
+    GLdouble ymin, ymax;
 	Point point1;
 
+    tie(xmin, xmax, ymin, ymax) = geodat;
 	point1 = nodes.begin()->second;
 	xmin = xmax = point1.GetX();
 	ymin = ymax = point1.GetY();
@@ -63,14 +72,17 @@ void GetCoordExtremes(
 		ymin = fmin(ymin, y);
 		ymax = fmax(ymax, y);
 	}
+    geodat = reals4(xmin, xmax, ymin, ymax);
 }
+
+#define FIELDWIDTH  10
 
 void PrintNodes(const NodeSet& nodes)
 {
 	cout << "@ Nodes:\n";
 	for (const pair<serial, Point>& node : nodes)
-		cout << setw(10) << node.first <<
-			setw(10) << node.second.GetX() <<
-			setw(10) << node.second.GetY() << "\n";
+		cout << setw(FIELDWIDTH) << node.first <<
+			setw(FIELDWIDTH) << node.second.GetX() <<
+			setw(FIELDWIDTH) << node.second.GetY() << "\n";
 	cout << endl;
 }

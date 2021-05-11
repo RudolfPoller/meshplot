@@ -18,11 +18,11 @@
 #include <list>
 #include <map>
 #include <cmath>
-using namespace std;
 
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 typedef unsigned serial;
+typedef std::tuple<GLdouble, GLdouble, GLdouble, GLdouble> reals4;
 
 enum input_grammar {meshplot, ansys};
 

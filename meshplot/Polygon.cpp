@@ -12,7 +12,7 @@
 
 #include "Polygon.h"
 
-
+using namespace std;
 
 Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3)
 {
@@ -62,28 +62,22 @@ void Polygon::AddCorner(const LabPointP& C)
  * first nodes will also be connected.
  */
 
-void Polygon::DrawLines(void) const
+list<GLfloat> Polygon::LsConNDCoords(void) const
 {
 	const LabPointP first = p_nodes.front();
 	const LabPointP last = p_nodes.back();
 	LabPointP secp1, secp2;
 	list<LabPointP>::const_iterator i, j;
+	list<GLfloat> conNodes;
 
-	glColor3f(0, 0, 0); // black
-	glLineWidth(1.0);
-
-	glBegin(GL_LINES);
-
-		for (i = j = p_nodes.begin(), ++j; j != p_nodes.end(); ++i, ++j){
-			secp1 = *i; secp2 = *j;
-			glVertex2f(secp1.second->GetX(), secp1.second->GetY());
-			glVertex2f(secp2.second->GetX(), secp2.second->GetY());
-		}
-
-		glVertex2f(last.second->GetX(), last.second->GetY());
-		glVertex2f(first.second->GetX(), first.second->GetY());
-
-	glEnd();
+    for (i = j = p_nodes.begin(), ++j; j != p_nodes.end(); ++i, ++j){
+        secp1 = *i; secp2 = *j;
+        conNodes.splice(conNodes.cend(), secp1.second->ListPos());
+        conNodes.splice(conNodes.cend(), secp2.second->ListPos());
+    }
+    conNodes.splice(conNodes.cend(), last.second->ListPos());
+    conNodes.splice(conNodes.cend(), first.second->ListPos());
+    return conNodes;
 }
 
 void Polygon::Print(serial label) const

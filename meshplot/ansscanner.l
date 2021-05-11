@@ -29,6 +29,8 @@
 
 %{
 
+using namespace std;
+
 #include "meshplot.h"
 #include "ansparser.tab.hpp"
 

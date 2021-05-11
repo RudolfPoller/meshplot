@@ -24,6 +24,8 @@
 
 %{
 
+using namespace std;
+
 #include <vector>
 
 #include "meshplot.h"

@@ -15,11 +15,11 @@
 #include "meshplot.h"
 #include "Point.h"
 
-typedef pair<serial, Point*> LabPointP;
+typedef std::pair<serial, Point*> LabPointP;
 
 class Polygon {
 
-	list<LabPointP> p_nodes;
+	std::list<LabPointP> p_nodes;
 
 public:
 
@@ -27,7 +27,7 @@ public:
 
 	Polygon(LabPointP, LabPointP, LabPointP);
 	Polygon(LabPointP, LabPointP, LabPointP, LabPointP);
-	Polygon(list<LabPointP>&);
+	Polygon(std::list<LabPointP>&);
 
 	Polygon(const Polygon&);
 	Polygon(Polygon&&) = default;
@@ -38,12 +38,13 @@ public:
 
 	bool empty(void) const { return p_nodes.empty(); }
 
+    std::list<GLfloat> LsConNDCoords(void) const;
+
 	void AddCorner(const LabPointP&);
-	void DrawLines(void) const;
 	void Print(serial) const;
 
 };
 
-typedef map<serial, Polygon> ElemSet;
+typedef std::map<serial, Polygon> ElemSet;
 
 #endif /* POLYGON_H_ */
