@@ -8,6 +8,7 @@
 //============================================================================
 
 #include <cstring>
+#include <filesystem>
 #include <GL/glew.h>
 
 #include "meshplot.h"
@@ -16,82 +17,84 @@
 
 using namespace std;
 
-typedef pair<NodeSet, ElemSet> FEMesh;
+typedef std::pair<NodeSet, ElemSet> FEMesh;
 
-// Geometry definition of the X window
+// Geometry definition of the initial X window
 const int XWinOrigX  =	  50;
 const int XWinOrigY  =	  60;
-const int XWinWidth  =	1100;
+const int XWinWidth  =	1200;
 const int XWinHeight =	 600;
 
-// Number of DOFs
-const GLsizei dofNum = 3;
-
+string progFileName;
 string problem_title;
+GLuint ShaderId;
+reals4 modelLims;
 FEMesh mesh;
 
-template<typename T>
-inline T midval(T min, T max) {
-	return 0.5 * (max + min);
-}
+extern void setViewSystem(GLsizei, GLsizei);
+extern void getModelView(void);
+extern void saveModelView(void);
+extern void resetView(void);
+extern void maximizeView(void);
+extern void readFEMesh(input_grammar, FEMesh&);
+extern void mouseEvent(int, int, int, int);
+extern void mouseKeptDown(int, int);
+extern void getShader(GLuint*);
 
-template<typename T>
-inline T halfdist(T dist) {
-	return 0.5 * dist;
-}
+int   initGraphics(int, char**);
+void  passNodePairs(void);
+void  plotFEMesh(void);
+void  keyBoardHit(unsigned char, int, int);
+void  writeTitle(string);
+void  writeStepTitle(const string&);
+void  writeKeyFuncInfo(void);
+void  writeMouseFuncInfo(void);
 
-extern void ReadFEMesh(input_grammar, FEMesh&);
+void errorHandle(const string&);
+template void errorHandle(const string&, const string&);
 
-GLuint VBuffIds[1];
-GLsizei nodePairNum;
-
-int  InitGraphics(int, char**);
-void PassNodePairs(void);
-void CollectCoordinates(const ElemSet&, list<GLfloat>&);
-void PlottingFEMesh(void);
-void SetViewSystem(GLsizei, GLsizei);
-void SetWinEqSides(reals4&);
-void SetLookWin(reals4);
-void KeyBoardHit(unsigned char, int, int);
-void WriteStepTitle(const string&);
-
-input_grammar getinpform(int, char**);
+input_grammar getInpForm(int, char**);
 
 int main(int argc, char **argv)
 {
-	cout << "*** Plotting FE Mesh by openGL" << endl;
-	ReadFEMesh(getinpform(argc, argv), mesh);
-	if (!InitGraphics(argc, argv))
+    filesystem::path progPath(argv[0]);
+
+    progFileName = progPath.filename();
+    writeTitle("Plotting FE Mesh by openGL");
+	readFEMesh(getInpForm(argc, argv), mesh);
+	if (!initGraphics(argc, argv))
 		return 1;
 	glutMainLoop();
 	return 0;
 }
 
-input_grammar getinpform(int argc, char **argv)
+input_grammar getInpForm(int argc, char **argv)
 {
 	char opt;
+	char *optArray;
 	input_grammar format = meshplot;
 
-	while (--argc)
-		if (argv[argc][0] == '-' && strlen(argv[argc]) == 2)
-			switch (opt = argv[argc][1]) {
-			case 'a':
-				format = ansys;
-				break;
-			default:
-				cerr << "invalid option: -" << opt << endl;
-				exit(1);
-				break;
-			}
-
+	while (--argc) {
+	    optArray = argv[argc];
+        if (optArray[0] == '-' && strlen(optArray) == 2)
+            switch (opt = optArray[1]) {
+            case 'a':
+                format = ansys;
+                break;
+            default:
+                errorHandle("invalid option -", opt);
+                break;
+            }
+	}
 	return format;
 }
 
-int InitGraphics(int argc, char **argv)
+int initGraphics(int argc, char **argv)
 {
-	GLenum glew_check;
+    const NodeSet& nodes = mesh.first;
+    GLenum glew_check;
 
-	WriteStepTitle("Displaying mesh");
+	writeStepTitle("Displaying mesh");
 
 	// Initialization of GLUT
 	glutInit(&argc, argv);
@@ -104,157 +107,115 @@ int InitGraphics(int argc, char **argv)
 
 	// Checking for openGL availability
 	glew_check = glewInit();
-	if (GLEW_OK != glew_check) {
-		cerr << "GLEW Error: " << glewGetErrorString(glew_check) << endl;
-		return 0;
-	}
+	if (GLEW_OK != glew_check)
+        errorHandle("GLEW Error:", *glewGetErrorString(glew_check));
 
-	// Printing the version of the current openGL implementation
-	cout << "OpenGL version: " << glGetString(GL_VERSION) << endl;
+    // Printing the version of the current openGL implementation
+    cout << "OpenGL version: " << glGetString(GL_VERSION) << endl;
+
+    // Printing the version of the current GLSL
+    cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 
 	// Background color: white
 	glClearColor(1.0, 1.0, 1.0, 0.0);
 
     // Line attributes
-	glColor3f(0, 0, 0); // black
+	glColor3f(0.0f, 0.0f, 0.0f); // black
     glLineWidth(1.0);
 
+    // Storing the model-view matrix (which will be now the identity)
+    getModelView();
+
+    // Getting the boundaries of the FE mesh
+    getCoordBounds(nodes, modelLims);
+
+    // Saving the view, so that it can be recalled
+    saveModelView();
+
 	// Feeding nodes that are to be connected
-	PassNodePairs();
+	passNodePairs();
 
-	// Registering the drawing procedure
-	glutDisplayFunc(PlottingFEMesh);
+	// Creating shader program
+	getShader(&ShaderId);
 
-	// Registering the reshape procedure
-	glutReshapeFunc(SetViewSystem);
+	// Registering callback procedures
+	glutDisplayFunc(plotFEMesh);
+	glutReshapeFunc(setViewSystem);
+    glutKeyboardFunc(keyBoardHit);
+    glutMouseFunc(mouseEvent);
+    glutMotionFunc(mouseKeptDown);
 
-    glutKeyboardFunc(KeyBoardHit);
+    writeKeyFuncInfo();
+    writeMouseFuncInfo();
 
 	return 1;
 }
 
-void PassNodePairs(void)
+
+enum class usedkey : unsigned char {
+    ESCAPE = 27,
+    KEY_M = 'm',
+    KEY_O = 'o',
+    KEY_R = 'r',
+    KEY_Z = 'z'
+};
+
+void keyBoardHit(unsigned char key, int x, int y)
 {
-    const NodeSet& nodes = mesh.first;
-    const ElemSet& elems = mesh.second;
-    reals4 wlims;
-    GLsizei coordNum, byteNum;
-    GLfloat *coords;
-    list<GLfloat> ConNDCoords;
-
-    GetCoordExtremes(nodes, wlims);
-    SetLookWin(wlims);
-    CollectCoordinates(elems, ConNDCoords);
-    coordNum = ConNDCoords.size();
-    byteNum = coordNum * sizeof(GLfloat);
-    nodePairNum = coordNum / dofNum;
-    coords = new GLfloat[coordNum];
-    copy(ConNDCoords.begin(), ConNDCoords.end(), coords);
-    glGenBuffers(1, VBuffIds);
-    glBindBuffer(GL_ARRAY_BUFFER, VBuffIds[0]);
-    glBufferData(GL_ARRAY_BUFFER, byteNum, coords, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    delete[] coords;
-}
-
-void CollectCoordinates(const ElemSet& elems, list<GLfloat>& connCoords)
-{
-    for (const pair<serial, Polygon>& elem : elems)
-        connCoords.splice(connCoords.end(), elem.second.LsConNDCoords());
-}
-
-void PlottingFEMesh(void)
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindBuffer(GL_ARRAY_BUFFER, VBuffIds[0]);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, dofNum, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_LINES, 0, nodePairNum);
-    glDisableVertexAttribArray(0);
-	glutSwapBuffers();
-}
-
-
-void SetViewSystem(GLsizei width, GLsizei height)
-{
-    GLint cornx, corny;
-    GLint origx, origy;
-    GLsizei sidelg, sideoffs;
-
-    sidelg = min(width, height);
-    origx = halfdist(width);
-    origy = halfdist(height);
-    sideoffs = halfdist(sidelg);
-    cornx = origx - sideoffs;
-    corny = origy - sideoffs;
-    glViewport(cornx, corny, sidelg, sidelg);
-}
-
-
-/*
- * The FE mesh will be viewed through a window
- * of equal sides
- */
-
-void SetWinEqSides(reals4& geodat)
-{
-	const GLdouble stripRatio = 0.1;
-	GLdouble sidelg;
-	GLdouble xmin, xmax, ymin, ymax;
-	GLdouble width, height;
-	GLdouble stripx, stripy;
-	GLdouble sideoffs, origx, origy;
-
-	tie(xmin, xmax, ymin, ymax) = geodat;
-	width  = xmax - xmin;
-	height = ymax - ymin;
-	stripx = width * stripRatio;
-	stripy = height * stripRatio;
-	xmin -= stripx; xmax += stripx;
-	ymin -= stripy; ymax += stripy;
-	sidelg = fmax(xmax - xmin, ymax - ymin);
-	sideoffs = halfdist(sidelg);
-	origx = midval(xmin, xmax);
-	origy = midval(ymin, ymax);
-	xmin = origx - sideoffs;
-	xmax = origx + sideoffs;
-	ymin = origy - sideoffs;
-	ymax = origy + sideoffs;
-	geodat = reals4(xmin, xmax, ymin, ymax);
-}
-
-
-/*
- * Creation of the window through which
- * the FE mesh will be viewed
- */
-
-void SetLookWin(reals4 geodat)
-{
-	GLdouble xmin, xmax, ymin, ymax;
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	SetWinEqSides(geodat);
-	tie(xmin, xmax, ymin, ymax) = geodat;
-	gluOrtho2D(xmin, xmax, ymin, ymax);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-#define ESCAPE_CHAR 27
-
-void KeyBoardHit(unsigned char key, int x, int y)
-{
-    switch (key) {
-    case ESCAPE_CHAR:
+    switch (static_cast<usedkey>(key)) {
+    case usedkey::ESCAPE:
         glutLeaveMainLoop();
-        cout << "Exit by ESC\n";
+        cout << "Exited by ESC\n";
         return;
+    case usedkey::KEY_M:
+        maximizeView();
+        return;
+    case usedkey::KEY_R:
+        resetView();
+        return;
+    default:
+        cout << "key " << key << " has no effect" << "\n";
+        break;
     }
 }
 
 
-void WriteStepTitle(const string& title)
+void errorHandle(const string& msg)
+{
+    cerr << progFileName << ": " << msg << endl;
+    exit(1);
+}
+
+template <typename T>
+void errorHandle(const string& msg, const T& spec)
+{
+    cerr << progFileName << ": " << msg << spec << endl;
+    exit(1);
+}
+
+
+void writeTitle(string title)
+{
+    cout << "*** " << title << endl;
+}
+
+void writeStepTitle(const string& title)
 {
 	cout << ". " << title << "..." << endl;
+}
+
+void  writeKeyFuncInfo(void)
+{
+    cout << "\n- Keyboard functions:" << "\n";
+    cout << "m    maximize view" << "\n";
+    cout << "r    reset view" << "\n";
+    cout << "ESC  exit" << endl;
+}
+
+void writeMouseFuncInfo(void)
+{
+    cout << "\n- Mouse functions:" << "\n";
+    cout << "Left button   offset" << "\n";
+    cout << "Scroll        zoom" << "\n";
+    cout << "Right button  rotation" << "\n";
 }

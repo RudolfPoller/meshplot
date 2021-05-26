@@ -30,7 +30,6 @@ using namespace std;
 #include "Polygon.h"
 
 typedef pair<NodeSet, ElemSet> FEMesh;
-typedef pair<serial, Point*> LabPointP;
 
 extern FEMesh *p_mesh;
 

@@ -15,8 +15,6 @@
 #include "meshplot.h"
 #include "Point.h"
 
-typedef std::pair<serial, Point*> LabPointP;
-
 class Polygon {
 
 	std::list<LabPointP> p_nodes;
@@ -25,8 +23,8 @@ public:
 
 	Polygon() = default;
 
-	Polygon(LabPointP, LabPointP, LabPointP);
-	Polygon(LabPointP, LabPointP, LabPointP, LabPointP);
+	Polygon(const LabPointP&, const LabPointP&, const LabPointP&);
+	Polygon(const LabPointP&, const LabPointP&, const LabPointP&, const LabPointP&);
 	Polygon(std::list<LabPointP>&);
 
 	Polygon(const Polygon&);
@@ -38,10 +36,11 @@ public:
 
 	bool empty(void) const { return p_nodes.empty(); }
 
-    std::list<GLfloat> LsConNDCoords(void) const;
+    std::list<GLfloat> listConnCoos(void) const;
+    std::list<GLfloat> listNodeCoos(void) const;
 
-	void AddCorner(const LabPointP&);
-	void Print(serial) const;
+	void addCorner(const LabPointP&);
+	void print(serial) const;
 
 };
 

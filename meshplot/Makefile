@@ -18,10 +18,11 @@ LFLAGS =	-L
 YACC = 		bison
 YFLAGS =	-d -l
 
-CXXFLAGS =	-Wall -fmessage-length=0 -std=c++11
+CXXFLAGS =	-Wall -fmessage-length=0 -std=c++20
 
 OBJS =		meshplot.o \
-			Point.o Polygon.o \
+			motion.o view.o plot.o mapping.o shader.o \
+			Point.o Polygon.o FreeVect.o \
 			readmesh.o \
 			meshparser.o meshscanner.o \
 			ansparser.o ansscanner.o
@@ -40,14 +41,49 @@ $(TARGET):	$(OBJS)
 	$(CXX) -o $(TARGET) $(OBJS) $(LIBS)
 	
 meshplot.cpp: meshplot.h Point.h Polygon.h
+	@touch $@
+	
+FreeVect.cpp: FreeVect.h
+	@touch $@
+	
+Point.h: FreeVect.h
+	@touch $@
 	
 Point.cpp: Point.h
+	@touch $@
 	
 Polygon.cpp: Polygon.h
+	@touch $@
+	
+view.cpp: meshplot.h
+	@touch $@
+	
+plot.cpp: meshplot.h Point.h Polygon.h
+	@touch $@
+	
+motion.cpp: meshplot.h Point.h Polygon.h
+	@touch $@
+	
+mapping.cpp: meshplot.h Point.h
+	@touch $@
+	
+shader.cpp: Polygon.h
+	@touch $@
 	
 readmesh.cpp: Point.h Polygon.h meshparser.tab.hpp ansparser.tab.hpp
+	@touch $@
 	
-meshparser.ypp meshscanner.l: meshplot.h parsescan.h
+ansparser.ypp: meshplot.h ansparsescan.h Point.h Polygon.h
+	@touch $@
+	
+ansscanner.l: meshplot.h ansparsescan.h
+	@touch $@
+
+meshparser.ypp: meshplot.h parsescan.h Point.h Polygon.h
+	@touch $@
+	
+meshscanner.l: meshplot.h parsescan.h
+	@touch $@
 
 %.tab.cpp %.tab.hpp: %.ypp
 	$(YACC) $(YFLAGS) $<

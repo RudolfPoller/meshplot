@@ -14,14 +14,14 @@
 
 using namespace std;
 
-Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3)
+Polygon::Polygon(const LabPointP& C1, const LabPointP& C2, const LabPointP& C3)
 {
 	p_nodes.push_back(C1);
 	p_nodes.push_back(C2);
 	p_nodes.push_back(C3);
 }
 
-Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3, LabPointP C4)
+Polygon::Polygon(const LabPointP& C1, const LabPointP& C2, const LabPointP& C3, const LabPointP& C4)
 {
 	p_nodes.push_back(C1);
 	p_nodes.push_back(C2);
@@ -31,7 +31,8 @@ Polygon::Polygon(LabPointP C1, LabPointP C2, LabPointP C3, LabPointP C4)
 
 Polygon::Polygon(list<LabPointP>& ps)
 {
-	p_nodes.splice(p_nodes.begin(), ps);
+	for (const LabPointP& p : ps)
+	    p_nodes.push_back(p);
 }
 
 Polygon::~Polygon() {
@@ -49,49 +50,66 @@ Polygon& Polygon::operator=(const Polygon &other) {
 }
 
 
-void Polygon::AddCorner(const LabPointP& C)
+void Polygon::addCorner(const LabPointP& C)
 {
 	p_nodes.push_back(C);
 }
 
 
 /*
- * Draws the sides of the polygon as lines one by one
+ * Provides the coordinates of nodes pairs element sides
+ * or their segments in the case of higher order approximation.
  *
  * The loop will be closed so that the last and the
  * first nodes will also be connected.
  */
 
-list<GLfloat> Polygon::LsConNDCoords(void) const
+list<GLfloat> Polygon::listConnCoos(void) const
 {
 	const LabPointP first = p_nodes.front();
 	const LabPointP last = p_nodes.back();
 	LabPointP secp1, secp2;
 	list<LabPointP>::const_iterator i, j;
-	list<GLfloat> conNodes;
+	list<GLfloat> connNodes;
 
     for (i = j = p_nodes.begin(), ++j; j != p_nodes.end(); ++i, ++j){
         secp1 = *i; secp2 = *j;
-        conNodes.splice(conNodes.cend(), secp1.second->ListPos());
-        conNodes.splice(conNodes.cend(), secp2.second->ListPos());
+        connNodes.splice(connNodes.cend(), secp1.second->listPos());
+        connNodes.splice(connNodes.cend(), secp2.second->listPos());
     }
-    conNodes.splice(conNodes.cend(), last.second->ListPos());
-    conNodes.splice(conNodes.cend(), first.second->ListPos());
-    return conNodes;
+    connNodes.splice(connNodes.cend(), last.second->listPos());
+    connNodes.splice(connNodes.cend(), first.second->listPos());
+    return connNodes;
 }
 
-void Polygon::Print(serial label) const
+
+/*
+ * Provides the node coordinates in order
+ */
+
+list<GLfloat> Polygon::listNodeCoos(void) const
 {
-	cout << setw(5) << label;
+    list<GLfloat> nodeCoos;
+
+    for (const LabPointP& p_node : p_nodes)
+        nodeCoos.splice(nodeCoos.cend(), p_node.second->listPos());
+    return nodeCoos;
+}
+
+#define FIELDWIDTH  5
+
+void Polygon::print(serial label) const
+{
+	cout << setw(FIELDWIDTH) << label;
 	for (const LabPointP& corner : p_nodes)
-		cout << setw(5) << corner.first;
+		cout << setw(FIELDWIDTH) << corner.first;
 	cout << "\n";
 }
 
-void PrintElements(const ElemSet& elems)
+void printElements(const ElemSet& elems)
 {
 	cout << "@ Elements:\n";
-	for (const pair<serial, Polygon>& elem : elems)
-		elem.second.Print(elem.first);
+	for (const std::pair<serial, Polygon>& elem : elems)
+		elem.second.print(elem.first);
 	cout << endl;
 }

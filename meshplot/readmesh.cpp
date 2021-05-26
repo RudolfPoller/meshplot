@@ -21,7 +21,7 @@ using namespace std;
 #include "ansparser.tab.hpp"
 
 extern string problem_title;
-extern void WriteStepTitle(const string&);
+extern void writeStepTitle(const string&);
 
 const yy::parser::debug_level_type      ParserDebug = 0;
 const ans::parser::debug_level_type ans_ParserDebug = 0;
@@ -29,12 +29,12 @@ const ans::parser::debug_level_type ans_ParserDebug = 0;
 typedef pair<NodeSet, ElemSet> FEMesh;
 FEMesh *p_mesh;
 
-void WriteStatistics(void);
+void writeStatistics(void);
 
-void ReadFEMesh(input_grammar format, FEMesh& mesh)
+void readFEMesh(input_grammar format, FEMesh& mesh)
 {
 	p_mesh = &mesh;
-	WriteStepTitle("Reading mesh data");
+	writeStepTitle("Reading mesh data");
 	switch (format) {
 	case ansys:
 		{
@@ -52,16 +52,20 @@ void ReadFEMesh(input_grammar format, FEMesh& mesh)
 			break;
 		}
 	}
-	WriteStatistics();
+	writeStatistics();
 }
 
-void WriteStatistics(void)
+#define FIELDWIDTH  4
+
+void writeStatistics(void)
 {
 	if (problem_title.size())
 		cout << problem_title << endl;
 	else
 	    cout << " --- No title specified ---" << endl;
-	cout << "\tnumber of nodes:    " << setw(4) << p_mesh->first.size() << endl;
-	cout << "\tnumber of elements: " << setw(4) << p_mesh->second.size() << endl;
+	cout << "\tnumber of nodes:    " << setw(FIELDWIDTH)
+	        << p_mesh->first.size() << endl;
+	cout << "\tnumber of elements: " << setw(FIELDWIDTH)
+	        << p_mesh->second.size() << endl;
 }
 
