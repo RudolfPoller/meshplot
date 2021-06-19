@@ -24,9 +24,9 @@ OBJS =		meshplot.o \
 			motion.o view.o plot.o mapping.o shader.o \
 			Point.o Polygon.o FreeVect.o \
 			readmesh.o \
-			meshparser.o meshscanner.o \
-			ansparser.o ansscanner.o
-
+			meshparser.o meshlexer.o \
+			ansparser.o anslexer.o
+			
 LIBS =		-lGLEW -lGLUT -lGLU -lGL -lfl
 
 TARGET =	meshplot.exe
@@ -37,8 +37,21 @@ else
 	CXXFLAGS := -O2 $(CXXFLAGS)
 endif
 
+OBJDIR =    ./obj
+SRCDIR =    ./src
+
+GPATH =     $(SRCDIR):$(SRCDIR)/input:$(SRCDIR)/mesh:$(SRCDIR)/ogl
+vpath %.o 	$(OBJDIR)
+vpath %.h 	$(SRCDIR):$(SRCDIR)/input:$(SRCDIR)/mesh
+vpath %.hpp $(SRCDIR)/input
+vpath %.cpp $(SRCDIR):$(SRCDIR)/input:$(SRCDIR)/mesh:$(SRCDIR)/ogl
+vpath %.lpp	$(SRCDIR)/input
+vpath %.ypp $(SRCDIR)/input
+
+CXXOBJS := $(OBJS:%=$(OBJDIR)/%)
+
 $(TARGET):	$(OBJS)
-	$(CXX) -o $(TARGET) $(OBJS) $(LIBS)
+	$(CXX) -o $(TARGET) $(CXXOBJS) $(LIBS)
 	
 meshplot.cpp: meshplot.h Point.h Polygon.h
 	@touch $@
@@ -76,30 +89,31 @@ readmesh.cpp: Point.h Polygon.h meshparser.tab.hpp ansparser.tab.hpp
 ansparser.ypp: meshplot.h ansparsescan.h Point.h Polygon.h
 	@touch $@
 	
-ansscanner.l: meshplot.h ansparsescan.h
+ansscanner.lpp: meshplot.h ansparsescan.h
 	@touch $@
 
 meshparser.ypp: meshplot.h parsescan.h Point.h Polygon.h
 	@touch $@
 	
-meshscanner.l: meshplot.h parsescan.h
+meshscanner.lpp: meshplot.h parsescan.h
 	@touch $@
-
-%.tab.cpp %.tab.hpp: %.ypp
-	$(YACC) $(YFLAGS) $<
 	
-%.o: %.tab.o
-	mv -f $< $@
+%.tab.hpp: %.ypp
+	$(YACC) $(YFLAGS) $<
+	mv $@ $(<D)
+	mv $(<F:.ypp=.tab.cpp) $(<:.ypp=.cpp)
 
-%.c: %.l
-
-%.cpp: %.l
-	$(LEX) -t $(LFLAGS) $< > $@
+%.o: %.lpp
+	$(LEX) -t $(LFLAGS) $< > $(<:.lpp=.cpp)
+	$(CXX) $(CXXFLAGS) -c $(<:.lpp=.cpp) -o obj/$(@F)
+	
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o obj/$(@F)
 
 all:	$(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
-	rm -f meshparser.tab.{cpp,hpp} meshscanner.cpp
-	rm -f ansparser.tab.{cpp,hpp} ansscanner.cpp
+	rm -f $(TARGET) $(CXXOBJS)
+	rm -f $(SRCDIR)/input/{meshparser.tab.{cpp,hpp},meshlexer.cpp}
+	rm -f $(SRCDIR)/input/{ansparser.tab.{cpp,hpp},anslexer.cpp}
 	

@@ -1,0 +1,23 @@
+// Mesh of a plate
+// 		An example for the utility meshplot
+
+/*
+	Author: Dr. Rudolf Poller
+	Creation date: 04.10, 2021
+*/
+
+*nodes   
+	1	-0.5 -0.5
+	2	 0.5 -0.5
+	3	 0.0  0.5
+	4	-0.5 -0.5
+	5	 0.5 -0.5
+	6	 0.5  0.5
+	7	-0.5  0.5
+*end
+
+*elements
+	1	1	2	3
+	2	4	5	6	7
+*end
+

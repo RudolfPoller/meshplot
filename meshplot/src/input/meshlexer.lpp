@@ -1,0 +1,110 @@
+/*
+ *  meshscanner.l
+ *
+ *  Created on: Apr. 12th, 2021
+ *      Author: Dr. Rudolf Poller
+ *
+ *  Synopsis
+ *  	flex lexical analyser definition file for processing FE mesh data
+ *
+ *	flex version: 2.6.4
+ */
+ 
+%option outfile="meshlexer.cpp"
+ 
+%option c++
+%option noyywrap
+%option yylineno
+
+%option debug
+
+/*
+ * The option noyywrap means that only one file will be processed
+ * at a time.
+ *
+ * The option yylineno makes the declaration and follow-up of a
+ * variable recording the current line number of the input unnecessary.
+ *
+ */
+
+%{
+
+using namespace std;
+
+#include "../meshplot.h"
+#include "meshparser.tab.hpp"
+
+/*
+ * The macro YY_DECL determines the signature of the lexer (yylex()).
+ *
+ * It is relaced by its content in the file lex.yy.cc so that it will
+ * be the heading line of the corresponding member function of the
+ * class indicated in the macro definition.
+ *
+ * Without the definition below, the signature of yylex() will be the
+ * default
+ *
+ *		int yyFlexLexer::yylex(void)
+ *
+ */
+
+#define YY_DECL symbol_type MeshScanner::yylex(int dummy)
+#define yyterminate() return static_cast<kind_type>(0)
+
+using parser = yy::parser;
+using symbol_type = parser::symbol_type;
+using kind_type = parser::by_type::kind_type;
+
+#include "parsescan.h"
+
+%}
+
+WSPC		[ \t]
+
+EOLN		\r\n
+
+REALNUM		[+-]?[0-9]*"."[0-9]*([+-]?[eE][0-9]+)?
+POSINT		[1-9][0-9]*
+ZERO		0
+
+LINE_COMMENT	"//".*{EOLN}
+BLOCK_COMMENT	"/*"(.|{EOLN})*"*/"
+
+NODESET_BEGIN	^"*nodes"{WSPC}*{EOLN}
+ELEMSET_BEGIN	^"*elements"{WSPC}*{EOLN}
+SET_END			^"*end"{WSPC}*{EOLN}
+
+%%
+
+{LINE_COMMENT}
+
+{BLOCK_COMMENT}
+
+{NODESET_BEGIN}	return parser::make_NODESET_BEGIN();
+{ELEMSET_BEGIN}	return parser::make_ELEMSET_BEGIN();		
+{SET_END}		return parser::make_SET_END();
+
+{REALNUM}		return parser::make_REALNUM(atof(yytext));
+{POSINT}		return parser::make_POSINT(atoi(yytext));
+{ZERO}			return parser::make_ZERO();
+
+{WSPC}+
+
+{EOLN}			return parser::make_EOLN();
+
+.
+
+%%
+
+/*
+	The definition of the virtual function int yylex()
+	of class yyFlexLexer declared in <FlexLexer.h>
+	
+	Its content is irrelevant since the yylex() function
+	defined by YY_DECL above will be used instead.
+	
+*/
+
+int yyFlexLexer::yylex(void) {
+	return 0;
+}
